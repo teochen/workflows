@@ -1,4 +1,4 @@
-name: 200 Pickup
+name: selftest
 
 on:
   schedule:
