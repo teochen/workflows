@@ -2,7 +2,7 @@ name: 200 Pickup
 
 on:
   schedule:
-    - cron: '20 14 * * *'  # 每天0点运行
+    - cron: '20 14 * * *'  # 每天14:20运行
   workflow_dispatch:  # 允许手动触发
 
 jobs:
@@ -51,7 +51,7 @@ jobs:
           tunnels = df[df["IP类型"].str.contains("隧道", na=False)]
           tunnels_sorted = tunnels.sort_values("等效带宽数值", ascending=False)
 
-          # 排除回源 IP 为 IPV6 格式的行
+          # 排除 IP 地址为 IPV6 格式的行
           tunnels_sorted = tunnels_sorted[~tunnels_sorted['IP地址'].apply(lambda x: bool(re.match(r'^[0-9a-fA-F:]+$', str(x))))]
 
           # 只保留等效带宽大于200的行
