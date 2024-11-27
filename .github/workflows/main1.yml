@@ -1,36 +1,53 @@
-- name: 处理CSV文件
-  env:
-    GITHUB_PERSONAL_TOKEN: ${{ secrets.EXTERNAL_REPO_TOKEN }}
-  run: |
-    import pandas as pd
-    import io
-    from github import Github
+name: Process Tunnel IPs
 
-    # GitHub凭证
-    token = "${{ secrets.EXTERNAL_REPO_TOKEN }}"
-    if not token:
-        raise ValueError("Token 未正确设置或为空")
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天0点运行
+  workflow_dispatch:  # 允许手动触发
 
-    g = Github(token)
+jobs:
+  process-csv:
+    runs-on: ubuntu-latest
 
-    # 对方仓库信息
-    external_repo_name = "x-dr/iptest"
-    source_file_path = "latest.csv"
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v3
 
-    # 读取对方仓库的源CSV文件
-    repo = g.get_repo(external_repo_name)
-    source_file = repo.get_contents(source_file_path)
-    source_content = source_file.decoded_content.decode('utf-8')
+      - name: 设置Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
 
-    # 读取CSV
-    df = pd.read_csv(io.StringIO(source_content))
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas PyGithub
 
-    # 筛选IP类型为"隧道"的行
-    tunnels_df = df[df['IP类型'].str.contains('隧道', na=False)]
+      - name: 处理CSV文件
+        env:
+          GITHUB_PERSONAL_TOKEN: ${{ secrets.EXTERNAL_REPO_TOKEN }}
+        run: |
+          python - <<EOF
+          import pandas as pd
+          import io
+          from github import Github
 
-    # 按等效带宽降序排列
-    tunnels_df_sorted = tunnels_df.sort_values(by='等效带宽', ascending=False)
+          token = "${{ secrets.EXTERNAL_REPO_TOKEN }}"
+          g = Github(token)
 
-    # 总是输出到 last.csv
-    tunnels_df_sorted.to_csv('last.csv', index=False, encoding='utf-8-sig')
-    print("处理完成，已更新 last.csv")
+          repo = g.get_repo("x-dr/iptest")
+          content = repo.get_contents("latest.csv").decoded_content.decode('utf-8')
+
+          df = pd.read_csv(io.StringIO(content))
+          tunnels = df[df["IP类型"].str.contains("隧道", na=False)].sort_values("等效带宽", ascending=False)
+          tunnels.to_csv("last.csv", index=False, encoding="utf-8-sig")
+          print("处理完成")
+          EOF
+
+      - name: 提交结果
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add last.csv
+          git commit -m "Update last.csv"
+          git push
