@@ -63,7 +63,7 @@ jobs:
         EOF
 
 # 输出到last.csv
-tunnels_df_sorted.to_csv('last.csv', index=False, encoding='utf-8-sig')
+tunnels_df_sorted.to_csv('./last.csv', index=False, encoding='utf-8-sig')
 EOF
 
     - name: 提交结果
