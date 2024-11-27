@@ -63,15 +63,15 @@ jobs:
           # 只保留等效带宽大于200的行
           tunnels_sorted = tunnels_sorted[tunnels_sorted['等效带宽数值'] > 200]
 
-          # 保存结果到 last200.csv
-          tunnels_sorted.to_csv("last200.csv", index=False, encoding="utf-8-sig")
-          print("处理完成，已更新 last200.csv")
+          # 保存结果到 selflast.csv
+          tunnels_sorted.to_csv("selflast.csv", index=False, encoding="utf-8-sig")
+          print("处理完成，已更新 selflast.csv")
           EOF
 
       - name: 提交结果
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add last200.csv
-          git commit -m "Update last200.csv"
+          git add selflast.csv
+          git commit -m "Update selflast.csv"
           git push
