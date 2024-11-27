@@ -62,10 +62,14 @@ jobs:
         print(f"处理完成，已更新 {output_path}")
         EOF
 
-    - name: 提交并推送结果
+# 输出到last.csv
+tunnels_df_sorted.to_csv('last.csv', index=False, encoding='utf-8-sig')
+EOF
+
+    - name: 提交结果
       run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
         git add last.csv
-        git commit -m "Update tunnels last.csv $(date +'%Y-%m-%d')"
+        git commit -m "Update last.csv"
         git push
