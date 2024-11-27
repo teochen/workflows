@@ -2,13 +2,16 @@ name: Process Tunnel IPs
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天0点运行
-  workflow_dispatch:  # 允许手动触发
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   process-csv:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: 检出仓库
       uses: actions/checkout@v3
@@ -17,6 +20,9 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: '3.9'
+
+    - name: 调试日志
+      run: echo "工作流已启动，TOKEN为${{ secrets.EXTERNAL_REPO_TOKEN }}"
 
     - name: 安装依赖
       run: |
@@ -34,6 +40,9 @@ from github import Github
 
 # GitHub凭证
 token = '${{ secrets.EXTERNAL_REPO_TOKEN }}'
+if not token:
+    raise ValueError("Token 未正确设置或为空")
+
 g = Github(token)
 
 # 对方仓库信息
