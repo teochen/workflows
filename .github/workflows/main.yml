@@ -2,7 +2,7 @@ name: Process Tunnel IPs
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天0点运行
+    - cron: '20 14 * * *'  # 每天0点运行
   workflow_dispatch:  # 允许手动触发
 
 jobs:
