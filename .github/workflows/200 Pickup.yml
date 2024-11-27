@@ -44,6 +44,12 @@ jobs:
           # 读取 CSV 文件
           df = pd.read_csv(io.StringIO(content))
 
+          # 打印列名，帮助调试
+          print("列名:", df.columns)
+
+          # 去除列名中的空格
+          df.columns = df.columns.str.strip()
+
           # 提取等效带宽中的数值部分（忽略单位 Mbps）
           df['等效带宽数值'] = df['等效带宽'].str.extract(r'(\d+\.?\d*)').astype(float)
 
@@ -51,8 +57,8 @@ jobs:
           tunnels = df[df["IP类型"].str.contains("隧道", na=False)]
           tunnels_sorted = tunnels.sort_values("等效带宽数值", ascending=False)
 
-          # 排除 IP 地址为 IPV6 格式的行
-          tunnels_sorted = tunnels_sorted[~tunnels_sorted['IP地址'].apply(lambda x: bool(re.match(r'^[0-9a-fA-F:]+$', str(x))))]
+          # 排除回源 IP 为 IPV6 格式的行
+          tunnels_sorted = tunnels_sorted[~tunnels_sorted['回源IP'].apply(lambda x: bool(re.match(r'^[0-9a-fA-F:]+$', str(x))))]
 
           # 只保留等效带宽大于200的行
           tunnels_sorted = tunnels_sorted[tunnels_sorted['等效带宽数值'] > 200]
