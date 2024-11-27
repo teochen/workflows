@@ -1,0 +1,71 @@
+name: Process Tunnel IPs
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天0点运行
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  process-csv:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出仓库
+      uses: actions/checkout@v3
+
+    - name: 设置Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
+
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas PyGithub
+
+    - name: 处理CSV文件
+      env:
+        GITHUB_PERSONAL_TOKEN: ${{ secrets.EXTERNAL_REPO_TOKEN }}
+      run: |
+        python << EOF
+        import pandas as pd
+        import io
+        from github import Github
+        from datetime import datetime
+
+        # GitHub凭证
+        token = '${{ secrets.EXTERNAL_REPO_TOKEN }}'
+        g = Github(token)
+
+        # 对方仓库信息 - 请替换为实际值
+        external_repo_name = "x-dr/iptest"
+        source_file_path = "latest.csv"
+
+        # 读取对方仓库的源CSV文件
+        repo = g.get_repo(external_repo_name)
+        source_file = repo.get_contents(source_file_path)
+        source_content = source_file.decoded_content.decode('utf-8')
+        
+        # 使用 io.StringIO 替代 pd.iotools.StringIO
+        df = pd.read_csv(io.StringIO(source_content))
+
+        # 筛选IP类型为"隧道"的行
+        tunnels_df = df[df['IP类型'].str.contains('隧道', na=False)]
+
+        # 按等效带宽降序排列
+        tunnels_df_sorted = tunnels_df.sort_values(by='等效带宽', ascending=False)
+
+        # 总是输出到 last.csv
+        output_path = 'last.csv'
+        tunnels_df_sorted.to_csv(output_path, index=False, encoding='utf-8-sig')
+
+        print(f"处理完成，已更新 {output_path}")
+        EOF
+
+    - name: 提交并推送结果
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git add last.csv
+        git commit -m "Update tunnels last.csv $(date +'%Y-%m-%d')"
+        git push
