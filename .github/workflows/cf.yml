@@ -25,7 +25,7 @@ jobs:
 
     - name: 处理CSV文件
       env:
-        GITHUB_PERSONAL_TOKEN: ${{ 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 }}
+        GITHUB_PERSONAL_TOKEN: ${{ secrets.EXTERNAL_REPO_TOKEN }}
       run: |
         python << EOF
         import pandas as pd
