@@ -15,7 +15,7 @@ jobs:
       - name: Fetch Source File
         id: fetch_file
         run: |
-          curl -s -o source.txt "https://raw.githubusercontent.com/IPDB/bestcf.txt/main/bestcf.txt"
+          curl -s -o source.txt "https://raw.githubusercontent.com/ymyuuu/IPDB/refs/heads/main/bestcf.txt"
           if [[ -f "bestcf.txt" ]]; then
             echo "Existing bestcf.txt found."
           else
