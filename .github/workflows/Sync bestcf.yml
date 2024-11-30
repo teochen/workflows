@@ -1,19 +1,16 @@
 name: Sync bestcf.txt
-
 on:
   schedule:
-    - cron: "*/15 * * * *"  # 每 15 分钟检查一次
+    - cron: "*/15 * * * *"  # 每 15 分钟检查一次，注意补全 cron 表达式
   workflow_dispatch:  # 手动触发
-
 jobs:
   sync-bestcf:
     runs-on: ubuntu-latest
-
     steps:
       # Step 1: 检出目标仓库
       - name: Checkout Repository
         uses: actions/checkout@v3
-
+      
       # Step 2: 拉取 IPDB/bestcf.txt
       - name: Fetch Source File
         id: fetch_file
@@ -25,7 +22,7 @@ jobs:
             echo "Creating an empty bestcf.txt"
             touch bestcf.txt
           fi
-
+      
       # Step 3: 检测更新并合并
       - name: Check and Merge Updates
         id: merge
@@ -38,7 +35,8 @@ jobs:
           else
             echo "No updates detected."
             echo "updated=false" >> $GITHUB_ENV
-
+          fi  # 添加这个 fi 结束 if 语句块
+      
       # Step 4: 提交和推送更新
       - name: Commit and Push Changes
         if: env.updated == 'true'
