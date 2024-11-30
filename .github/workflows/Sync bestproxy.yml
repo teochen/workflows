@@ -1,0 +1,50 @@
+name: Sync bestproxy.txt
+on:
+  schedule:
+    - cron: "*/60 * * * *"  # 每 15 分钟检查一次
+  workflow_dispatch:  # 手动触发
+jobs:
+  sync-bestproxy:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: 检出目标仓库
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      
+      # Step 2: 拉取 ymyuuu/IPDB 的 bestproxy.txt
+      - name: Fetch Source File
+        id: fetch_file
+        run: |
+          curl -s -o source.txt "https://raw.githubusercontent.com/ymyuuu/IPDB/refs/heads/main/bestproxy.txt"
+          if [[ -f "bestproxy.txt" ]]; then
+            echo "Existing bestproxy.txt found."
+          else
+            echo "Creating an empty bestproxy.txt"
+            touch bestproxy.txt
+          fi
+      
+      # Step 3: 检测更新并合并，只保留唯一值
+      - name: Check and Merge Updates
+        id: merge
+        run: |
+          # 合并并去重，只保留唯一行
+          awk '!seen[$0]++' source.txt bestproxy.txt > merged.txt
+          
+          if ! cmp -s merged.txt bestproxy.txt; then
+            echo "Updates detected."
+            mv merged.txt bestproxy.txt
+            echo "updated=true" >> $GITHUB_ENV
+          else
+            echo "No updates detected."
+            echo "updated=false" >> $GITHUB_ENV
+          fi
+      
+      # Step 4: 提交和推送更新
+      - name: Commit and Push Changes
+        if: env.updated == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bestproxy.txt
+          git commit -m "Sync unique updates from bestproxy.txt [$(date)]"
+          git push
