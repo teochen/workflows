@@ -1,37 +1,77 @@
-name: Update last200.csv
+name: 200 Pickup
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  schedule:
+    - cron: '20 14 * * *'  # 每天14:20运行
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
-  update-csv:
+  process-csv:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: 检出仓库
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      - name: 设置Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pandas
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas PyGithub
 
-    - name: Update last200.csv
-      run: |
-        python your_script.py  # Replace with the actual script to update the CSV
+      - name: 处理CSV文件
+        env:
+          GITHUB_PERSONAL_TOKEN: ${{ secrets.EXTERNAL_REPO_TOKEN }}
+        run: |
+          python - <<EOF
+          import pandas as pd
+          import io
+          from github import Github
+          import re
 
-    - name: Commit and Push Changes
-      run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git add last200.csv
-        git commit -m "Update last200.csv" || echo "No changes to commit"
-        git push
+          # GitHub 凭证
+          token = "${{ secrets.EXTERNAL_REPO_TOKEN }}"
+          g = Github(token)
+
+          # 获取最新 CSV 文件
+          repo = g.get_repo("x-dr/iptest")
+          content = repo.get_contents("latest.csv").decoded_content.decode('utf-8')
+
+          # 读取 CSV 文件
+          df = pd.read_csv(io.StringIO(content))
+
+          # 打印列名，帮助调试
+          print("列名:", df.columns)
+
+          # 去除列名中的空格
+          df.columns = df.columns.str.strip()
+
+          # 提取等效带宽中的数值部分（忽略单位 Mbps）
+          df['等效带宽数值'] = df['等效带宽'].str.extract(r'(\d+\.?\d*)').astype(float)
+
+          # 筛选 IP 类型为 "隧道" 并按等效带宽降序排序
+          tunnels = df[df["IP类型"].str.contains("隧道", na=False)]
+          tunnels_sorted = tunnels.sort_values("等效带宽数值", ascending=False)
+
+          # 排除回源 IP 为 IPV6 格式的行
+          tunnels_sorted = tunnels_sorted[~tunnels_sorted['回源IP'].apply(lambda x: bool(re.match(r'^[0-9a-fA-F:]+$', str(x))))]
+
+          # 只保留等效带宽大于200的行
+          tunnels_sorted = tunnels_sorted[tunnels_sorted['等效带宽数值'] > 200]
+
+          # 保存结果到 last200.csv
+          tunnels_sorted.to_csv("last200.csv", index=False, encoding="utf-8-sig")
+          print("处理完成，已更新 last200.csv")
+          EOF
+
+      - name: 提交结果
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add last200.csv
+          git commit -m "Update last200.csv" || echo "No changes to commit"
+          git push
