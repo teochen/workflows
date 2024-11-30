@@ -19,21 +19,21 @@ jobs:
         id: fetch_file
         run: |
           curl -s -o source.txt "https://raw.githubusercontent.com/IPDB/bestcf.txt/main/bestcf.txt"
-          if [[ -f "data.txt" ]]; then
-            echo "Existing data.txt found."
+          if [[ -f "bestcf.txt" ]]; then
+            echo "Existing bestcf.txt found."
           else
-            echo "Creating an empty data.txt"
-            touch data.txt
+            echo "Creating an empty bestcf.txt"
+            touch bestcf.txt
           fi
 
       # Step 3: 检测更新并合并
       - name: Check and Merge Updates
         id: merge
         run: |
-          sort -u source.txt data.txt -o merged.txt
-          if ! cmp -s merged.txt data.txt; then
+          sort -u source.txt bestcf.txt -o merged.txt
+          if ! cmp -s merged.txt bestcf.txt; then
             echo "Updates detected."
-            mv merged.txt data.txt
+            mv merged.txt bestcf.txt
             echo "updated=true" >> $GITHUB_ENV
           else
             echo "No updates detected."
@@ -45,6 +45,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.txt
+          git add bestcf.txt
           git commit -m "Sync updates from bestcf.txt [$(date)]"
           git push
