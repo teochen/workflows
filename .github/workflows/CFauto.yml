@@ -1,0 +1,42 @@
+name: Sync bestcf.txt
+
+on:
+  schedule:
+    - cron: '*/30 * * * *' # 每 30 分钟运行一次
+  repository_dispatch: # 当上游触发事件时同步
+
+jobs:
+  sync-bestcf:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Fetch bestcf.txt from source
+        run: |
+          curl -o bestcf_raw.txt https://raw.githubusercontent.com/ymyuuu/IPDB/refs/heads/main/bestcf.txt
+
+      - name: Modify content of bestcf.txt
+        run: |
+          i=1
+          while IFS= read -r line; do
+            echo "$line #CFauto$i" >> bestcf.txt
+            i=$((i+1))
+          done < bestcf_raw.txt
+
+      - name: Commit and push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # 检查文件是否有变化
+          if ! git diff --quiet; then
+            git add bestcf.txt
+            git commit -m "Update bestcf.txt with #CFauto annotations"
+            git push
+          else
+            echo "No changes to commit"
+          fi
