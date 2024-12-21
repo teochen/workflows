@@ -21,6 +21,7 @@ jobs:
       - name: Modify content of CFauto.txt
         run: |
           i=1
+          > CFauto.txt # 清空文件或创建新文件
           while IFS= read -r line; do
             echo "$line #CFauto$i" >> CFauto.txt
             i=$((i+1))
