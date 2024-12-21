@@ -1,50 +1,40 @@
-name: Sync CFauto.txt
+name: Sync and Process bestcf.txt
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 每 30 分钟运行一次
-  repository_dispatch: # 当上游触发事件时同步
+    - cron: "*/30 * * * *" # 每 30 分钟触发
   workflow_dispatch: # 手动触发
+  repository_dispatch: # 上游触发通知
+    types:
+      - update-bestcf
 
 jobs:
-  sync-bestcf:
+  sync-and-process:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Fetch bestcf.txt from source
+      - name: Download bestcf.txt
         run: |
-          curl -o bestcf_raw.txt https://raw.githubusercontent.com/ymyuuu/IPDB/refs/heads/main/bestcf.txt
+          curl -o bestcf.txt https://raw.githubusercontent.com/ymyuuu/IPDB/refs/heads/main/bestcf.txt
 
-      - name: Modify content of CFauto.txt
+      - name: Process file and generate CFauto.txt
         run: |
-          i=1
-          > CFauto.txt # 清空文件或创建新文件
+          line_number=1
           while IFS= read -r line; do
-            echo "$line #CFauto$i" >> CFauto.txt
-            i=$((i+1))
-          done < bestcf_raw.txt
-          # 输出调试信息
-          echo "Generated CFauto.txt:"
-          cat CFauto.txt
+            echo "$line #CFauto$line_number" >> CFauto.txt
+            line_number=$((line_number + 1))
+          done < bestcf.txt
 
       - name: Commit and push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          # 调试文件状态
-          echo "Current directory content:"
-          ls -l
-          
-          # 检查文件是否有变化
-          if ! git diff --quiet; then
-            git add CFauto.txt
-            git commit -m "Update CFauto.txt with #CFauto annotations"
-            git push
-          else
-            echo "No changes to commit"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mv CFauto.txt CFauto.txt
+          git add CFauto.txt
+          git commit -m "Update CFauto.txt from bestcf.txt"
+          git push
