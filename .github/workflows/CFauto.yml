@@ -18,11 +18,11 @@ jobs:
         run: |
           curl -o bestcf_raw.txt https://raw.githubusercontent.com/ymyuuu/IPDB/refs/heads/main/bestcf.txt
 
-      - name: Modify content of bestcf.txt
+      - name: Modify content of CFauto.txt
         run: |
           i=1
           while IFS= read -r line; do
-            echo "$line #CFauto$i" >> bestcf.txt
+            echo "$line #CFauto$i" >> CFauto.txt
             i=$((i+1))
           done < bestcf_raw.txt
 
@@ -35,8 +35,8 @@ jobs:
 
           # 检查文件是否有变化
           if ! git diff --quiet; then
-            git add bestcf.txt
-            git commit -m "Update bestcf.txt with #CFauto annotations"
+            git add CFauto.txt
+            git commit -m "Update CFauto.txt with #CFauto annotations"
             git push
           else
             echo "No changes to commit"
